@@ -1,0 +1,32 @@
+
+services:
+  php-cli:
+    container_name: ${COMPOSE_PROJECT_NAME}_php
+    build:
+      context: ./php-cli
+    volumes:
+      - ../app:/app
+    networks:
+      - project-network
+
+  mariadb:
+    image: mariadb:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_mariadb
+    volumes:
+      - mariadb:/var/lib/mariadb
+      - ./mariadb/init:/docker-entrypoint-initdb.d
+    environment:
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+      MARIADB_ROOT_PASSWORD: ${DB_PASS}
+    networks:
+      - project-network
+
+networks:
+  project-network:
+    name: ${COMPOSE_PROJECT_NAME}_network
+
+volumes:
+  mariadb:
+    name: ${COMPOSE_PROJECT_NAME}_mariadb

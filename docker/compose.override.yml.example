@@ -1,0 +1,19 @@
+
+services:
+  php-cli:
+    build:
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+    ports:
+      - "127.0.0.1:8888:80"
+    volumes:
+      - ./php-cli/assets:/usr/local/etc/php/conf-z.d/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mariadb:
+    ports:
+      - "127.0.0.1:3388:3306"
+    command: >
+      --general-log=1
+      --general-log-file=/var/log/mysql/query.log

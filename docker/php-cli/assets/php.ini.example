@@ -1,0 +1,6 @@
+memory_limit = 256M
+post_max_size = 16M
+upload_max_filesize = 16M
+error_reporting = E_WARNING
+error_log = /var/log/php/php_errors.log
+allow_url_fopen = 1
