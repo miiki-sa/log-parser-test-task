@@ -1,0 +1,7 @@
+services:
+    _defaults:
+        public: true
+
+    App\Domain\Log\Analytic\AnalyticServiceInterface:
+        class: App\Domain\Log\Analytic\AnalyticService
+        public: true 

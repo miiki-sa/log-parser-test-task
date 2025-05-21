@@ -1,16 +1,15 @@
-FROM php:8.4-cli-alpine
+FROM php:8.4-cli-alpine AS production
 
 ARG UID=1000
 
 ENV PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/usr/local/etc/php/conf-z.d
 
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
-
-RUN set -xeu pipefail; \
-    # Install dev deps  \
-    apk add --no-cache --update linux-headers bash git \
-    # Install PHP deps
+RUN set -xeu pipefail \
+    && apk update \
+    # Install PHP build deps
     && apk update && apk add --no-cache -t .deps $PHPIZE_DEPS \
+    # Install PHP extension deps
+    && apk add --no-cache \
         icu-dev \
         libpng-dev \
         libzip-dev \
@@ -22,16 +21,29 @@ RUN set -xeu pipefail; \
         intl \
         pdo_mysql \
         zip \
-    && pecl install xdebug && docker-php-ext-enable xdebug \
-    && curl -sS https://get.symfony.com/cli/installer -o /tmp/symfony-installer.sh \
-        && bash /tmp/symfony-installer.sh --install-dir=/usr/local/bin \
-        && rm /tmp/symfony-installer.sh \
+    && pecl install redis && docker-php-ext-enable redis \
     && usermod -u "${UID}" www-data \
     && groupmod -g "${UID}" www-data \
-    && mkdir /app && chown www-data:www-data /app
+    && mkdir /app && chown www-data:www-data /app \
+    && apk del .deps
 
 WORKDIR /app
 
-EXPOSE 80
+FROM production AS development
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+RUN set -xeu pipefail \
+    # Install dev deps  \
+    && apk add --no-cache linux-headers bash git \
+    # Install PHP build deps
+    && apk update && apk add --no-cache -t .deps $PHPIZE_DEPS \
+    # Install xdebug
+    && pecl install xdebug && docker-php-ext-enable xdebug \
+    # Install Symfony CLI
+    && curl -sS https://get.symfony.com/cli/installer -o /tmp/symfony-installer.sh \
+        && bash /tmp/symfony-installer.sh --install-dir=/usr/local/bin \
+        && rm /tmp/symfony-installer.sh \
+    && apk del .deps
 
 CMD ["php", "-S", "0.0.0.0:80", "-t", "public"]

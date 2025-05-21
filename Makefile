@@ -31,7 +31,10 @@ install: \
 	install-docker-build \
 	install-php-ini \
 	install-database \
-	install-app
+	install-app \
+	install-migrations \
+	start \
+	demo
 
 install-docker-build:
 	@echo "Build docker images"
@@ -66,20 +69,43 @@ install-migrations:
 
 start:
 	cd ./docker && docker compose up -d
-	@echo "Application is available at: http://127.0.0.1:8080/api/doc"
+	@echo "Application is available at: http://127.0.0.1:8888/api/doc"
+
+start-consumer:
+		cd ./docker && \
+		docker compose run --rm \
+			-u www-data \
+			-e XDEBUG_MODE=off \
+			--name=$(COMPOSE_PROJECT_NAME)-consumer \
+			php-cli \
+			bin/console messenger:consume redis -vv; \
 
 stop:
-	cd ./docker && docker compose down
+	cd ./docker && docker compose down -v
 
 restart: stop start
+
+stop-consumer:
+	cd ./docker && \
+	docker exec -it -u www-data -e XDEBUG_MODE=off \
+	$(COMPOSE_PROJECT_NAME)-consumer \
+	bin/console messenger:stop-workers
 
 clean:
 	cd ./docker && docker compose down -v
 	git clean -fdx -e .idea
 
 mariadb-cli:
-	cd ./docker && docker compose run --rm -it mariadb mysql \
-	-uroot -p$$(grep DB_ROOT_PASSWORD .env | cut -d '=' -f2)
+	cd ./docker && docker compose exec mariadb mariadb -u $(DB_USER) --password=$(DB_PASS)
 
 sh:
-	cd ./docker && docker compose run --rm -it php-cli sh -l
+	cd ./docker && docker compose run --rm -u www-data -it -e XDEBUG_MODE=off php-cli sh -l
+
+test:
+	cd ./docker && docker compose run --rm -u www-data -it -e XDEBUG_MODE=off php-cli sh -c "composer qa"
+
+demo: dispatch start-consumer
+
+dispatch:
+	cd ./docker && docker compose run --rm -u www-data -it -e XDEBUG_MODE=off php-cli \
+		php bin/console app:log:parse data/logs.log -vv

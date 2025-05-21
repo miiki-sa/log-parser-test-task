@@ -8,12 +8,11 @@ services:
       - "127.0.0.1:8888:80"
     volumes:
       - ./php-cli/assets:/usr/local/etc/php/conf-z.d/
+    environment:
+      PHP_IDE_CONFIG: "serverName=dev"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
   mariadb:
     ports:
       - "127.0.0.1:3388:3306"
-    command: >
-      --general-log=1
-      --general-log-file=/var/log/mysql/query.log

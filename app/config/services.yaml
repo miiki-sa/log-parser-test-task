@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    app.log_parser.buffer_size: '%env(int:default:app_log_parser_buffer_size_default:APP_LOG_PARSER_BUFFER_SIZE)%'
+    app_log_parser_buffer_size_default: 1000
 
 services:
     # default configuration for services in *this* file
@@ -17,8 +19,18 @@ services:
         resource: '../src/'
         exclude:
             - '../src/DependencyInjection/'
-            - '../src/Entity/'
+            - '../src/Infrastructure/Log/Entity/'
+            - '../src/Infrastructure/Log/Dto/'
             - '../src/Kernel.php'
+            - '../src/Domain/Log/Log.php'
+
+    app.logs_iterator:
+        class: App\Domain\Log\Parser\LogsIterator\LogsIterator
+        autowire: true
+
+    App\Domain\Log\Parser\Service\LogParserService:
+        arguments:
+            $bufferSize: '%app.log_parser.buffer_size%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
